@@ -78,6 +78,8 @@ def get_args():
                         help='Where to save trained model.')
     parser.add_argument('--save_top_k', type=int, default=1,
                         help='Number of top k checkpoints to save. Default: 1.')
+    parser.add_argument('--no_context',  action="store_true",
+                        help = 'Train/test model on single sentences.')
     args = parser.parse_args()
     return args
 
@@ -155,7 +157,7 @@ def main():
 
     elif args.emoset == 'meld_friends_german_aligned' or args.emoset == 'meld_friends_english' or args.emoset == 'meld_friends_german_deepl': # no non-neutral in MELD version of this dataset (split seems to be the same as friends, check why the labels are different
         emo_dict = {'neutral': 0, 'sadness': 1, 'anger':2, 'joy':3, 'surprise':4, 'fear':5, 'disgust':6}
-        focus_dict = ['neutral', 'sadness', 'anger', 'joy']
+        focus_dict = ['neutral', 'sadness', 'anger', 'joy', 'surprise', 'fear', 'disgust' ]
         sentiment_dict = {'neutral': 0, 'sadness': 1, 'anger':1, 'joy':2, 'surprise':2,'fear':1, 'disgust':1}
 
     elif args.emoset == 'emotionpush' or args.emoset == 'emotionpush_german':

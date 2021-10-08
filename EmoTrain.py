@@ -21,6 +21,60 @@ from collections import Counter
 from sklearn.metrics import confusion_matrix
 import matplotlib.pyplot as plt
 import seaborn as sns
+import json
+from collections import defaultdict
+
+def probs_to_json(outputs, df_test, args):
+    ## english meld friends
+    dialogue_id_name = "dialogue_id" # TODO
+    sentence_id_name = "utterance_id"
+
+    df_test = df_test.assign(neutral=0.0)
+    df_test = df_test.assign(sad=0.0)
+    df_test = df_test.assign(angry=0.0)
+    df_test = df_test.assign(joy=0.0)
+    df_test = df_test.assign(surprise=0.0)
+    df_test = df_test.assign(fear=0.0)
+    df_test = df_test.assign(disgust=0.0)
+
+    print("len outputs :", len(outputs))
+    print("len df ", df_test.shape)
+    # get probs
+    dialogue_probs = []
+    for dialogue_logits in outputs:
+        dialogue_probs.append(torch.nn.functional.softmax(dialogue_logits, dim=1))
+
+    dialogues = df_test.groupby(dialogue_id_name)
+    json_dict = defaultdict(dict)
+    for group_name, df_group in dialogues:
+        turns_dict = defaultdict(dict)
+        for i,(index, row) in enumerate(df_group.iterrows()):
+            # print("dialogue id {}, sentence id {}".format(group_name, i))
+            dialogue_tensors = dialogue_probs[group_name]
+            sentence_probs = dialogue_tensors[i]
+            df_test.loc[index, 'neutral'] = sentence_probs[0].item()
+            df_test.loc[index, 'sad'] = sentence_probs[1].item()
+            df_test.loc[index, 'angry'] = sentence_probs[2].item()
+            df_test.loc[index, 'joy'] = sentence_probs[3].item()
+            df_test.loc[index, 'surprise'] = sentence_probs[4].item()
+            df_test.loc[index, 'fear'] = sentence_probs[5].item()
+            df_test.loc[index, 'disgust'] = sentence_probs[6].item()
+            sentence_emotions = {
+                                 'neutral': sentence_probs[0].item(),
+                                 'sad' : sentence_probs[1].item(),
+                                 'angry' : sentence_probs[2].item(),
+                                 'joy' : sentence_probs[3].item(),
+                                 'surprise' : sentence_probs[4].item(),
+                                 'fear' : sentence_probs[5].item(),
+                                 'disgust' : sentence_probs[6].item()
+                                }
+            turns_dict[row['transcription']] = sentence_emotions
+        json_dict['dialogue_id'][group_name] = turns_dict
+
+    df_test.to_csv(args.csv_out, index=False, quotechar='"')
+    json_data = json.dumps(json_dict, indent=3)
+    with open(args.json_out, 'w') as f:
+        f.write(json_data)
 
 def metrics(loss, logits, labels, class_weights, emo_dict,focus_emo, args):
 
@@ -28,10 +82,7 @@ def metrics(loss, logits, labels, class_weights, emo_dict,focus_emo, args):
     preds = torch.argmax(logits, dim=1)
     predslist = preds.cpu().tolist()
 
-
-
     cm = np.zeros((len(emo_dict.keys()),len(emo_dict.keys())), dtype=np.int64) # recall
-
 
     for label, pred in zip(labels.view(-1), preds.view(-1)):
         cm[label.long(), pred.long()] += 1
@@ -123,6 +174,7 @@ class EmotionModel(pl.LightningModule):
         self.df_val = df_val
         self.df_test = df_test
         self.verbosity = verbosity
+
         if args.speaker_embedding:
             print('Speaker Embedding is Enabled')
             self.encoder, self.max_number_of_speakers_in_dialogue = self.get_speakers_encoder_with_complete_speakers_list()
@@ -132,7 +184,9 @@ class EmotionModel(pl.LightningModule):
             self.max_number_of_speakers_in_dialogue =0
             self.encoder = 0
 
-        if not self.args.emoset == 'semeval':
+        if self.args.emoset == 'meld_friends_german_aligned': ## need to use 47, max length in VAM, else can't test on that since positional embeddings are learned..
+            self.max_number_of_utter_in_dialogue = 47
+        elif not self.args.emoset == 'semeval':
             self.max_number_of_utter_in_dialogue = self.get_max_utterance_length_in_dialogue()
         else:
             self.max_number_of_utter_in_dialogue = 3
@@ -156,6 +210,7 @@ class EmotionModel(pl.LightningModule):
                                                                  self.args,
                                                                  self.loss_weights,
                                                                  dropout = self.dropout)
+        self.save_hyperparameters()
         self.sentence_embeds_model.cuda(self.args.device)
         self.context_classifier_model.cuda(self.args.device)
 
@@ -287,8 +342,8 @@ class EmotionModel(pl.LightningModule):
 
         loss, logits = self.forward(input_ids = input_ids, attention_mask = attention_mask,spkr_emd = spkr_emd,  labels = labels)
         scores_dict1 = metrics(loss, logits, labels, self.class_weights, self.emo_dict,self.focus_emo, self.args)
-
         return scores_dict1
+
     def validation_epoch_end(self, outputs):
         """
         called at the end of validation to aggregate outputs
@@ -309,8 +364,6 @@ class EmotionModel(pl.LightningModule):
         tqdm_dict['val_loss'] = 0
 
         for metric_name in outputs[0].keys():
-
-
             for output in outputs:
                 metric_value = output[metric_name]
                 if metric_name in ['y_pred', 'y_true']:
@@ -331,12 +384,7 @@ class EmotionModel(pl.LightningModule):
 
         tqdm_dict['acc_unweighted'] = np.round(sum(tqdm_dict['acc_per_class']) / len(tqdm_dict['acc_per_class']),2)
         tqdm_dict['acc_weighted'] = sum(weight * value for weight, value in zip(self.class_weights, tqdm_dict['acc_per_class']))
-
         tqdm_dict['acc_weighted'] = (tqdm_dict['acc_weighted'] * 10**2).round() / (10**2)
-
-
-
-
 
         prec_rec_f1 = calc_f1_score(tqdm_dict['tp'], tqdm_dict['fp'], tqdm_dict['fn'])
         tqdm_dict.update(prec_rec_f1)
@@ -360,20 +408,27 @@ class EmotionModel(pl.LightningModule):
         self.log('performance',microF1_per_class)
 
         if self.verbosity :
-
             print(*tqdm_dict.items(), sep='\n')
 
         result = {'progress_bar': tqdm_dict, 'log': tqdm_dict, 'val_loss': tqdm_dict["val_loss"]}
         return
 
     def test_step(self, batch, batch_idx):
+        if self.args.emoset == 'vam':
+            input_ids, attention_mask = batch
 
-        return self.validation_step(batch, batch_idx)
-
+            logits = self.forward(input_ids = input_ids, attention_mask = attention_mask,spkr_emd = 0,  labels = None)
+            return logits
+        else:
+            return self.validation_step(batch, batch_idx)
 
     def test_epoch_end(self, outputs):
-        return_value =  self.validation_epoch_end(outputs)
-        return (return_value)
+        if self.args.emoset == 'vam':
+            probs_to_json(outputs, self.df_test, self.args)
+            return
+        else:
+            return_value =  self.validation_epoch_end(outputs)
+        return return_value
 
     def configure_optimizers(self):
         """
@@ -441,7 +496,7 @@ def train_model (model):
 
 def test_model(trainer, model):
     if 1:
-        score = trainer.test(verbose = model.verbosity)
+        score = trainer.test(model, verbose = model.verbosity)
 
     else:
         checkpoint_path = './lightning_logs/version_0/checkpoints/'

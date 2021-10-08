@@ -37,7 +37,7 @@ class sentence_embeds_model(torch.nn.Module):
     def __init__(self, args, dropout = 0.1):
         super(sentence_embeds_model, self).__init__()
         self.args = args
-        if self.args.emoset == 'friends_german' or self.args.emoset == 'meld_friends_german_aligned' or self.args.emoset == 'meld_friends_german_deepl':
+        if self.args.emoset == 'friends_german' or self.args.emoset == 'meld_friends_german_aligned' or self.args.emoset == 'meld_friends_german_deepl' or self.args.emoset == 'vam':
             if args.use_distilbert:
                 print('Dataset Name {}  Use DistilBert Flag  {} Model being used {}'.format(args.emoset, args.use_distilbert, 'distilbert-base-german-cased' ))
                 self.transformer = DistilBertModel.from_pretrained('distilbert-base-german-cased', dropout=dropout,
@@ -59,7 +59,7 @@ class sentence_embeds_model(torch.nn.Module):
         """
         bert = self.transformer
 
-        if (self.args.emoset == 'friends_german' or self.args.emoset == 'meld_friends_german_aligned' or self.args.emoset == 'meld_friends_german_deepl') and not self.args.use_distilbert:
+        if (self.args.emoset == 'friends_german' or self.args.emoset == 'meld_friends_german_aligned' or self.args.emoset == 'meld_friends_german_deepl' or self.args.emoset == 'vam') and not self.args.use_distilbert:
             num_layers = bert.config.num_hidden_layers
             opt_parameters = [{'params': bert.embeddings.parameters(), 'lr': lr*decay**num_layers}]
             opt_parameters += [{'params': bert.encoder.layer[l].parameters(), 'lr': lr*decay**(num_layers-l+1)}
@@ -86,12 +86,11 @@ class sentence_embeds_model(torch.nn.Module):
             attention_mask = attention_mask.flatten(end_dim = 1)
 
 
-
         output = self.transformer(input_ids = input_ids,
                                   attention_mask = attention_mask, inputs_embeds = input_embeds)
 
         cls = output[0][:,0]
-        if (self.args.emoset == 'friends_german' or self.args.emoset == 'meld_friends_german_aligned' or self.args.emoset == 'meld_friends_german_deepl') and not self.args.use_distilbert:
+        if (self.args.emoset == 'friends_german' or self.args.emoset == 'meld_friends_german_aligned' or self.args.emoset == 'meld_friends_german_deepl' or self.args.emoset == 'vam') and not self.args.use_distilbert:
             hidden_mean = torch.mean(output[2][-1],1)
         else:
             hidden_mean = torch.mean(output[1][-1],1)
@@ -208,7 +207,7 @@ class context_classifier_model(torch.nn.Module):
             sentence_embeds = sentence_embeds.to(device=self.args.device, dtype=torch.float)
         sentence_embeds = self.drop(self.norm(sentence_embeds))
         if labels is None:
-            if not self.emoset == 'semeval':
+            if not self.args.emoset == 'semeval':
                 return self.context_transformer(inputs_embeds = sentence_embeds.transpose(0, 1), labels = labels)[0]
             else:
                 return self.context_transformer(inputs_embeds = sentence_embeds.flip(1), labels = labels)[0]

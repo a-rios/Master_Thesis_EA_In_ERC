@@ -57,64 +57,77 @@ def create_df(data, emoset):
 
     return df
 
-def load_df(args):
+def load_df(args, test_only=False):
 
     if args.emoset == 'emorynlp':
         print('Creating Training/Val/Test Dataframes for EmoryNLP Dataset')
-        train_path = os.path.join(args.data_dir, 'EmoryNLP/English/emotion-detection-trn.json')
-        val_path = os.path.join(args.data_dir, 'EmoryNLP/English/emotion-detection-dev.json')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'EmoryNLP/English/emotion-detection-trn.json')
+            val_path = os.path.join(args.data_dir, 'EmoryNLP/English/emotion-detection-dev.json')
         test_path = os.path.join(args.data_dir, 'EmoryNLP/English/emotion-detection-tst.json')
     elif args.emoset == 'emorynlp_german':
         print('Creating Training/Val/Test Dataframes for EmoryNLP German Dataset')
-        train_path = os.path.join(args.data_dir, 'EmoryNLP/German/emorynlp_train_de.csv')
-        val_path = os.path.join(args.data_dir, 'EmoryNLP/German/emorynlp_val_de.csv')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'EmoryNLP/German/emorynlp_train_de.csv')
+            val_path = os.path.join(args.data_dir, 'EmoryNLP/German/emorynlp_val_de.csv')
         test_path = os.path.join(args.data_dir, 'EmoryNLP/German/emorynlp_test_de.csv')
 
     elif  args.emoset == 'friends':
         print('Creating Training/Val/Test Dataframes for Friends Dataset')
-        train_path = os.path.join(args.data_dir, 'Friends/Friends_English/friends.train.json')
-        val_path = os.path.join(args.data_dir, 'Friends/Friends_English/friends.dev.json')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'Friends/Friends_English/friends.train.json')
+            val_path = os.path.join(args.data_dir, 'Friends/Friends_English/friends.dev.json')
         test_path = os.path.join(args.data_dir, 'Friends/Friends_English/friends.test.json')
     elif args.emoset == 'friends_german':
         print('Creating Training/Val/Test Dataframes for Friends German Dataset')
-        train_path = os.path.join(args.data_dir, 'Friends/Friends_German/friends_train_de.csv')
-        val_path = os.path.join(args.data_dir, 'Friends/Friends_German/friends_val_de.csv')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'Friends/Friends_German/friends_train_de.csv')
+            val_path = os.path.join(args.data_dir, 'Friends/Friends_German/friends_val_de.csv')
         test_path = os.path.join(args.data_dir, 'Friends/Friends_German/friends_test_de.csv')
 
     elif  args.emoset == 'emotionpush':
         print('Creating Training/Val/Test Dataframes for EmotionPush Dataset')
-        train_path = os.path.join(args.data_dir, 'Emotionpush/English/emotionpush.train.json')
-        val_path =   os.path.join(args.data_dir, 'Emotionpush/English/emotionpush.dev.json')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'Emotionpush/English/emotionpush.train.json')
+            val_path =   os.path.join(args.data_dir, 'Emotionpush/English/emotionpush.dev.json')
         test_path =  os.path.join(args.data_dir, 'Emotionpush/English/emotionpush.test.json')
 
     elif args.emoset == 'emotionpush_german':
         print('Creating Training/Val/Test Dataframes for Emotionpush German Dataset')
-        train_path = os.path.join(args.data_dir, 'Emotionpush/German/emotionpush_train_de.csv')
-        val_path =   os.path.join(args.data_dir, 'Emotionpush/German/emotionpush_val_de.csv')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'Emotionpush/German/emotionpush_train_de.csv')
+            val_path =   os.path.join(args.data_dir, 'Emotionpush/German/emotionpush_val_de.csv')
         test_path =  os.path.join(args.data_dir, 'Emotionpush/German/emotionpush_test_de.csv')
 
     elif args.emoset == 'meld_friends_german_aligned':
         print('Creating Training/Val/Test Dataframes for MELD Friends aligned German Dataset')
-        train_path = os.path.join(args.data_dir, 'train_sent_emo_de_fixed_idx.csv')
-        val_path =   os.path.join(args.data_dir, 'dev_sent_emo_de.csv')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'train_sent_emo_de_fixed_idx.csv')
+            val_path =   os.path.join(args.data_dir, 'dev_sent_emo_de.csv')
         test_path =  os.path.join(args.data_dir, 'test_sent_emo_de_gold_fixed_idx.csv')
 
     elif args.emoset == 'meld_friends_german_deepl':
         print('Creating Training/Val/Test Dataframes for MELD Friends aligned German Dataset')
-        train_path = os.path.join(args.data_dir, 'train_sent_emo_de_deepl.csv')
-        val_path =   os.path.join(args.data_dir, 'dev_sent_emo_de_deepl.csv')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'train_sent_emo_de_deepl.csv')
+            val_path =   os.path.join(args.data_dir, 'dev_sent_emo_de_deepl.csv')
         test_path =  os.path.join(args.data_dir, 'test_sent_emo_de_gold_fixed_idx_deeplname.csv')
 
     elif args.emoset == 'meld_friends_english':
         print('Creating Training/Val/Test Dataframes for MELD Friends English Dataset')
-        train_path = os.path.join(args.data_dir, 'train_sent_emo_fixed_idx.csv')
-        val_path =   os.path.join(args.data_dir, 'dev_sent_emo.csv')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'train_sent_emo_fixed_idx.csv')
+            val_path =   os.path.join(args.data_dir, 'dev_sent_emo.csv')
         test_path =  os.path.join(args.data_dir, 'test_sent_emo_gold_fixed_idx.csv')
+    elif args.emoset == 'vam':
+        print('Creating Test Dataframes for VAM')
+        test_path =  os.path.join(args.data_dir, 'vam.csv')
 
     else:
         print('Creating Training/Val/Test Dataframes for Semeval Dataset')
-        train_path = os.path.join(args.data_dir, 'clean_train.txt')
-        val_path = os.path.join(args.data_dir, 'clean_val.txt')
+        if not test_only:
+            train_path = os.path.join(args.data_dir, 'clean_train.txt')
+            val_path = os.path.join(args.data_dir, 'clean_val.txt')
         test_path = os.path.join(args.data_dir, 'clean_test.txt')
 
     if args.emoset in ['friends', 'emotionpush', 'emorynlp'] :
@@ -128,31 +141,31 @@ def load_df(args):
         with open(test_path, encoding='utf-8') as data_file:
             test_json = json.loads(data_file.read())
 
-        df_train = create_df(train_json, args.emoset)
-        df_val = create_df(val_json,  args.emoset)
+        if not test_only:
+            df_train = create_df(train_json, args.emoset)
+            df_val = create_df(val_json,  args.emoset)
         df_test = create_df(test_json,  args.emoset)
     elif args.emoset == 'semeval':
-        df_train = pd.read_csv(train_path, delimiter='\t', index_col='id')
-        df_val =  pd.read_csv(val_path, delimiter='\t', index_col='id')
+        if not test_only:
+            df_train = pd.read_csv(train_path, delimiter='\t', index_col='id')
+            df_val =  pd.read_csv(val_path, delimiter='\t', index_col='id')
         df_test = pd.read_csv(test_path, delimiter='\t', index_col='id')
         '''
         df_train = df_train.iloc[0:500, :]
         df_val = df_val.iloc[0:160, :]
         df_test = df_test.iloc[0:160, :]
         '''
-    else:
-
-        df_train = pd.read_csv(train_path)
-        df_val =  pd.read_csv(val_path)
+        #file,narrow_transcription,transcription,valence_ewe,activation_ewe,dominance_ewe,valence_std,activation_std,dominance_std,speaker,gender,age
+    elif args.emoset == 'vam':
+        #utterance_string = "transcription"
         df_test = pd.read_csv(test_path)
-        df_train = df_train.dropna()
-        df_val = df_val.dropna()
         df_test = df_test.dropna()
+        df_test = df_test.assign(dialogue_id=df_test['file'].str.extract(r'Satz(..)').astype(int)-1) # dialogue ids start at 1, set to 0
+        df_test = df_test.assign(utterance_id=df_test['file'].str.extract(r'(...)\.wav').astype(int))
+        df_test['utterance_len'] = df_test[['transcription']].applymap(lambda x: len(x.split()))
+        return df_test
+    else:
         col_dict = {'label': 'label'}  if args.emoset == 'meld_friends_german_aligned' else {'emotion': 'label'}   ## key→old name, value→new name
-        df_train.columns = [col_dict.get(x, x) if x in col_dict.keys() else x  for x in df_train.columns]
-        df_val.columns = [col_dict.get(x, x) if x in col_dict.keys() else x  for x in df_val.columns]
-        df_test.columns = [col_dict.get(x, x) if x in col_dict.keys() else x  for x in df_test.columns]
-        #df_train.rename(columns={'emotion':'label'}, inplace=True)
 
         utterance_string =  "utterance_de_deepl"
         if args.emoset == 'meld_friends_german_aligned':
@@ -160,10 +173,23 @@ def load_df(args):
         elif  args.emoset == 'meld_friends_english':
             utterance_string = 'Utterance'
 
-        df_train['utterance_len'] = df_train[[utterance_string]].applymap(lambda x: len(x.split()))
-        df_val['utterance_len'] = df_val[[utterance_string]].applymap(lambda x: len(x.split()))
+        if not test_only:
+            df_train = pd.read_csv(train_path)
+            df_val =  pd.read_csv(val_path)
+            df_train = df_train.dropna()
+            df_val = df_val.dropna()
+            df_train.columns = [col_dict.get(x, x) if x in col_dict.keys() else x  for x in df_train.columns]
+            df_val.columns = [col_dict.get(x, x) if x in col_dict.keys() else x  for x in df_val.columns]
+            df_train['utterance_len'] = df_train[[utterance_string]].applymap(lambda x: len(x.split()))
+            df_val['utterance_len'] = df_val[[utterance_string]].applymap(lambda x: len(x.split()))
+        df_test = pd.read_csv(test_path)
+        df_test = df_test.dropna()
+        df_test.columns = [col_dict.get(x, x) if x in col_dict.keys() else x  for x in df_test.columns]
         df_test['utterance_len'] = df_test[[utterance_string]].applymap(lambda x: len(x.split()))
-    return (df_train, df_val, df_test)
+        if test_only:
+            return df_test
+        else:
+            return (df_train, df_val, df_test)
 
 def shuffle_dataframe(df):
     dialogue_id_list = list((df['dialogue_id'].unique()))
