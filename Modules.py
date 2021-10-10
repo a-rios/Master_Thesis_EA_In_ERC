@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from transformers import DistilBertModel, DistilBertForSequenceClassification, DistilBertConfig
 from transformers import AutoModel, AutoTokenizer
 from transformers import AutoConfig, AutoModelForPreTraining, AutoModelForSequenceClassification
+from transformers import BertForSequenceClassification
 
 '''
   This class makes use of DistilBert model to model word level input and capture the context of utterance level embeddings.
@@ -27,7 +28,55 @@ from transformers import AutoConfig, AutoModelForPreTraining, AutoModelForSequen
      Tensor containing the utterance level embeddings.
 
 '''
+class sentence_classifier_model(torch.nn.Module):
+    def __init__(self, args, dropout = 0.1, loss_weights = None, num_labels = 7):
+        super(sentence_classifier_model, self).__init__()
+        self.args = args
+        self.loss_weights = loss_weights
+        print('Dataset Name {} Model being used {}'.format(args.emoset, 'dbmdz/bert-base-german-uncased' ))
+        self.transformer = BertForSequenceClassification.from_pretrained("dbmdz/bert-base-german-uncased", cache_dir=args.cache_dir, num_labels=num_labels)
 
+
+    def layerwise_lr(self, lr, decay):
+        """
+        returns grouped model parameters with layer-wise decaying learning rate
+        """
+        bert = self.transformer
+        num_layers = bert.config.num_hidden_layers
+        opt_parameters = [{'params': bert.bert.embeddings.parameters(), 'lr': lr*decay**num_layers}]
+        opt_parameters += [{'params': bert.bert.encoder.layer[l].parameters(), 'lr': lr*decay**(num_layers-l+1)}
+                            for l in range(num_layers)]
+
+        return opt_parameters
+
+    def comput_loss(self, log_prob, target, weights):
+        """ Weighted loss function """
+        loss = F.cross_entropy(log_prob, target, weight=weights, reduction='sum')
+        loss /= target.size(0)
+
+        return loss
+
+    def forward(self, input_ids = None, attention_mask = None, input_embeds = None, labels = None):
+        """
+        returns the sentence embeddings
+        """
+        if input_ids is not None:
+            input_ids = input_ids.flatten(end_dim = 1)
+
+        if attention_mask is not None:
+            attention_mask = attention_mask.flatten(end_dim = 1)
+
+        # output['loss'], ['logits']
+        output = self.transformer(input_ids = input_ids,
+                                  attention_mask = attention_mask, inputs_embeds = input_embeds, labels=labels)
+        if labels is not None:
+            if self.args.bww:
+                loss = self.comput_loss(output['logits'], labels, self.loss_weights)
+            else:
+                loss = output['loss']
+            return loss, output['logits']
+        else:
+            return output['logits']
 
 class sentence_embeds_model(torch.nn.Module):
     """

@@ -123,7 +123,7 @@ class CustomDataset(Dataset):
     def __getitem__(self, idx):
         if not self.args.emoset == 'semeval':
             assert idx  in list(range (len( self.data['dialogue_id'].unique())))
-            df = self.data.loc[self.data.dialogue_id ==idx].reset_index(drop = True)
+            df = self.data.loc[self.data.dialogue_id ==idx].reset_index(drop = True) # no_context: no need to change to single sentences here
         else:
             df = self.data.loc[self.data.index ==idx].reset_index(drop = True)
         padded, attention_mask, tokenizer = self.transform_data(df, self.args.max_seq_len)

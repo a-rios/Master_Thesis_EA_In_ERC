@@ -25,8 +25,6 @@ def get_args():
 	                    help='gpu: default 0')
     parser.add_argument('--emoset', type=str, default = 'emorynlp',
                         help = 'Emotion Training Set Name')
-    parser.add_argument('--with_labels',  action="store_true",
-                        help = 'Evaluate F1/Acc scores (labels present in test data).')
     parser.add_argument('--cache_dir', type=str, required=False,
                         help='Cache directory for transformer models.')
     parser.add_argument('--data_dir', type=str, required=False, default=os.path.join(os.path.dirname(__file__), "data"),

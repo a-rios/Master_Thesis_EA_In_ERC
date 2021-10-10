@@ -47,7 +47,7 @@ def probs_to_json(outputs, df_test, args):
     dialogues = df_test.groupby(dialogue_id_name)
     json_dict = defaultdict(dict)
     for group_name, df_group in dialogues:
-        turns_dict = defaultdict(dict)
+        turns_list = []
         for i,(index, row) in enumerate(df_group.iterrows()):
             # print("dialogue id {}, sentence id {}".format(group_name, i))
             dialogue_tensors = dialogue_probs[group_name]
@@ -68,8 +68,15 @@ def probs_to_json(outputs, df_test, args):
                                  'fear' : sentence_probs[5].item(),
                                  'disgust' : sentence_probs[6].item()
                                 }
-            turns_dict[row['transcription']] = sentence_emotions
-        json_dict['dialogue_id'][group_name] = turns_dict
+
+            turn_dict = {
+                            'turn' : row['utterance_id'],
+                            'text' : row['transcription'],
+                            'speaker_id': group_name+1,
+                            'emotion_text': sentence_emotions
+                        }
+            turns_list.append(turn_dict)
+        json_dict['speaker_id'][group_name] = turns_list
 
     df_test.to_csv(args.csv_out, index=False, quotechar='"')
     json_data = json.dumps(json_dict, indent=3)
@@ -199,20 +206,26 @@ class EmotionModel(pl.LightningModule):
         self.class_weights = self.calc_class_weight(self.df_train, self.weight_rate )
         self.class_weights = self.class_weights.cuda(self.args.device)
         print( 'class weights = {}'.format(self.class_weights))
-        self.sentence_embeds_model = Modules.sentence_embeds_model(self.args, dropout = self.dropout)
-        self.context_classifier_model = Modules.context_classifier_model(self.sentence_embeds_model.embedding_size,
-                                                                 self.projection_size,
-                                                                 self.n_layers,
-                                                                 self.emo_dict,
-                                                                 self.focus_dict,
-                                                                 self.max_number_of_speakers_in_dialogue,
-                                                                 self.max_number_of_utter_in_dialogue,
-                                                                 self.args,
-                                                                 self.loss_weights,
-                                                                 dropout = self.dropout)
+        if self.args.no_context:
+           self.sentence_classifier_model = Modules.sentence_classifier_model(self.args, dropout = self.dropout, loss_weights = self.loss_weights, num_labels = len(self.emo_dict))
+        else:
+            self.sentence_embeds_model = Modules.sentence_embeds_model(self.args, dropout = self.dropout)
+            self.context_classifier_model = Modules.context_classifier_model(self.sentence_embeds_model.embedding_size,
+                                                                    self.projection_size,
+                                                                    self.n_layers,
+                                                                    self.emo_dict,
+                                                                    self.focus_dict,
+                                                                    self.max_number_of_speakers_in_dialogue,
+                                                                    self.max_number_of_utter_in_dialogue,
+                                                                    self.args,
+                                                                    self.loss_weights,
+                                                                    dropout = self.dropout)
         self.save_hyperparameters()
-        self.sentence_embeds_model.cuda(self.args.device)
-        self.context_classifier_model.cuda(self.args.device)
+        if self.args.no_context:
+            self.sentence_classifier_model.cuda(self.args.device)
+        else:
+            self.sentence_embeds_model.cuda(self.args.device)
+            self.context_classifier_model.cuda(self.args.device)
 
     def calc_loss_weight(self, df, rate= 0.75):
         """ Loss weights """
@@ -310,10 +323,11 @@ class EmotionModel(pl.LightningModule):
         no special modification required for lightning, define as you normally would
         """
 
-        sentence_embeds = self.sentence_embeds_model(input_ids = input_ids,
-                                                             attention_mask = attention_mask)
-
-        return self.context_classifier_model(sentence_embeds = sentence_embeds,spkr_emd = spkr_emd, labels = labels)
+        if self.args.no_context:
+            return self.sentence_classifier_model(input_ids = input_ids,attention_mask = attention_mask, labels = labels)
+        else:
+            sentence_embeds = self.sentence_embeds_model(input_ids = input_ids,attention_mask = attention_mask)
+            return self.context_classifier_model(sentence_embeds = sentence_embeds,spkr_emd = spkr_emd, labels = labels)
 
     def training_step(self, batch, batch_idx):
         """
@@ -416,7 +430,6 @@ class EmotionModel(pl.LightningModule):
     def test_step(self, batch, batch_idx):
         if self.args.emoset == 'vam':
             input_ids, attention_mask = batch
-
             logits = self.forward(input_ids = input_ids, attention_mask = attention_mask,spkr_emd = 0,  labels = None)
             return logits
         else:
@@ -434,8 +447,11 @@ class EmotionModel(pl.LightningModule):
         """
         returns the optimizer and scheduler
         """
-        params = self.sentence_embeds_model.layerwise_lr(self.args.lr, self.args.layerwise_decay)
-        params += [{'params': self.context_classifier_model.parameters()}]
+        if self.args.no_context:
+            params = self.sentence_classifier_model.layerwise_lr(self.args.lr, self.args.layerwise_decay)
+        else:
+            params = self.sentence_embeds_model.layerwise_lr(self.args.lr, self.args.layerwise_decay)
+            params += [{'params': self.context_classifier_model.parameters()}]
         self.optimizer = torch.optim.Adam(params, lr=self.args.lr)
         self.scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(self.optimizer, T_max=10)
         return [self.optimizer], [self.scheduler]
