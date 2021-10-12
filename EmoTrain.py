@@ -42,7 +42,10 @@ def probs_to_json(outputs, df_test, args):
     # get probs
     dialogue_probs = []
     for dialogue_logits in outputs:
-        dialogue_probs.append(torch.nn.functional.softmax(dialogue_logits, dim=1))
+        if args.print_logits:
+            dialogue_probs.append(dialogue_logits)
+        else:
+            dialogue_probs.append(torch.nn.functional.softmax(dialogue_logits, dim=1))
 
     dialogues = df_test.groupby(dialogue_id_name)
     json_dict = defaultdict(dict)

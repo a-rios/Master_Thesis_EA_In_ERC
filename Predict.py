@@ -35,6 +35,8 @@ def get_args():
                         help='Path to json output file.')
     parser.add_argument('--csv_out', type=str, metavar='PATH',
                         help='Path to csv output file.')
+    parser.add_argument('--print_logits',  action="store_true",
+                        help = 'Print raw logits to json instead of probabilities.')
     args = parser.parse_args()
     return args
 
