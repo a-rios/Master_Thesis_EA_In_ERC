@@ -63,7 +63,7 @@ def main():
     print('Args.device = {}'.format(args.device))
 
     print('Creating eval dfs')
-    df_test  = Utils.load_df(args, test_only=True)
+    df_test, _ , _  = Utils.load_df(args, test_only=True)
     print('Finished Creating eval dfs')
 
     if args.emoset == 'meld_friends_german_aligned' or args.emoset == 'meld_friends_english' or args.emoset == 'meld_friends_german_deepl' or args.emoset == 'vam' : # no non-neutral in MELD version of this dataset (split seems to be the same as friends, check why the labels are different

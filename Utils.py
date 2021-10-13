@@ -58,7 +58,6 @@ def create_df(data, emoset):
     return df
 
 def load_df(args, test_only=False):
-
     if args.emoset == 'emorynlp':
         print('Creating Training/Val/Test Dataframes for EmoryNLP Dataset')
         if not test_only:
@@ -118,7 +117,7 @@ def load_df(args, test_only=False):
         if not test_only:
             train_path = os.path.join(args.data_dir, 'train_sent_emo_fixed_idx.csv')
             val_path =   os.path.join(args.data_dir, 'dev_sent_emo.csv')
-        test_path =  os.path.join(args.data_dir, 'test_sent_emo_gold_fixed_idx.csv')
+        test_path =  os.path.join(args.data_dir, 'test_sent_emo_gold_fixed_idx_NEW.csv')
     elif args.emoset == 'vam':
         print('Creating Test Dataframes for VAM')
         test_path =  os.path.join(args.data_dir, 'vam.csv')
@@ -186,10 +185,10 @@ def load_df(args, test_only=False):
         df_test = df_test.dropna()
         df_test.columns = [col_dict.get(x, x) if x in col_dict.keys() else x  for x in df_test.columns]
         df_test['utterance_len'] = df_test[[utterance_string]].applymap(lambda x: len(x.split()))
-        if test_only:
-            return df_test
-        else:
-            return (df_train, df_val, df_test)
+    if test_only:
+        return (df_test, None, None)
+    else:
+        return (df_train, df_val, df_test)
 
 def shuffle_dataframe(df):
     dialogue_id_list = list((df['dialogue_id'].unique()))
